@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>My Workout Tracker</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --border-color: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+    .container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header h1:hover { opacity: 0.8; }
+    .edit-icon { font-size: 0.8rem; opacity: 0.6; }
+    
+    .header-btns { display: flex; gap: 8px; }
+    .btn-icon {
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+      margin-bottom: 8px;
+    }
+    .workout-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--card-bg);
+      padding: 14px 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-color);
+    }
+    .workout-title { font-size: 1.1rem; font-weight: bold; }
+    .workout-info { font-size: 0.8rem; color: var(--text-sub); margin-top: 2px; }
+    
+    /* Timer Style */
+    .timer-card {
+      background: #0284c7;
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .timer-display { font-size: 1.3rem; font-weight: bold; font-family: monospace; }
+    .timer-btns { display: flex; gap: 6px; }
+    .btn-sm {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 0.8rem;
+    }
+
+    /* Modal Styling */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      z-index: 100;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+    .modal-content h2 { margin: 0; font-size: 1.1rem; }
+    .modal-content label { font-size: 0.8rem; color: var(--text-sub); margin-top: 2px; display: block; }
+    .modal-content input, .modal-content select {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: white;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+    .modal-btns { display: flex; gap: 8px; margin-top: 6px; }
+
+    /* Custom Item Groups */
+    .item-row {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-bottom: 6px;
+      width: 100%;
+    }
+    .item-row input[type="text"] { flex: 1; min-width: 0; padding: 6px 8px; }
+    .item-row input[type="number"] { width: 55px; text-align: center; padding: 6px 4px; }
+    .item-row select { width: 60px; padding: 6px 2px; text-align: center; }
+    .btn-del-row {
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 30px;
+      height: 33px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Set Checklist Styling */
+    .day-badge {
+      display: inline-block;
+      background-color: var(--accent-blue);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    .mode-badge {
+      display: inline-block;
+      background-color: var(--border-color);
+      color: var(--text-sub);
+      padding: 3px 8px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      margin-left: 4px;
+    }
+    .set-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .set-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--border-color);
+      padding: 12px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .set-item.done { background-color: #064e3b; opacity: 0.7; }
+    .set-item.done .set-reps { text-decoration: line-through; }
+    .checkbox {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid #64748b;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .set-item.done .checkbox {
+      border-color: var(--accent-green);
+      background-color: var(--accent-green);
+    }
+    .set-item.done .checkbox::after { content: '✓'; color: white; font-size: 12px; }
+
+    .btn {
+      width: 100%; padding: 10px; border: none; border-radius: 8px;
+      font-size: 0.9rem; font-weight: bold; color: white;
+      background-color: var(--accent-blue); cursor: pointer; margin-top: 6px;
+    }
+    .btn-sub { background-color: var(--border-color); color: #cbd5e1; }
+    .btn-danger { background-color: #ef4444; }
+    .back-btn { background: none; border: none; color: var(--accent-blue); font-size: 0.95rem; cursor: pointer; padding: 0; }
+    .type-tab { display: flex; gap: 6px; margin-bottom: 4px; }
+    .type-tab button {
+      flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color);
+      background: #0f172a; color: var(--text-sub); cursor: pointer; font-size: 0.8rem;
+    }
+    .type-tab button.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+
+    /* Calendar Grid Styling */
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+    .cal-day-name { font-size: 0.7rem; color: var(--text-sub); font-weight: bold; padding-bottom: 4px; }
+    .cal-cell {
+      min-height: 42px;
+      background: #0f172a;
+      border-radius: 6px;
+      padding: 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.7rem;
+      border: 1px solid transparent;
+    }
+    .cal-cell.today { border-color: var(--accent-blue); }
+    .cal-cell .date-num { font-weight: bold; margin-bottom: 1px; }
+    .cal-cell .workout-tag {
+      background: var(--accent-green);
+      color: white;
+      font-size: 0.6rem;
+      padding: 1px 2px;
+      border-radius: 3px;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 메인 루틴 목록 화면 -->
+  <div id="viewList">
+    <div class="header">
+      <h1 onclick="editAppTitle()" title="제목 변경하려면 클릭">
+        <span id="appTitle">My Routines</span>
+        <span class="edit-icon">✏️</span>
+      </h1>
+      <div class="header-btns">
+        <button class="btn-icon" onclick="openCalendarModal()" title="운동 달력">📅</button>
+        <button class="btn-icon" onclick="openAddModal()" title="루틴 추가">+</button>
+      </div>
+    </div>
+    <div id="workoutList"></div>
+  </div>
+
+  <!-- 루틴 상세 화면 -->
+  <div id="viewDetail" style="display: none;">
+    <div class="header">
+      <button class="back-btn" onclick="showList()">◀ 목록으로</button>
+      <h1 id="detailTitle" style="font-size: 1.1rem;">루틴 이름</h1>
+      <div></div>
+    </div>
+
+    <!-- 타이머 섹션 -->
+    <div class="timer-card">
+      <div>
+        <div style="font-size:0.7rem; opacity:0.8;">REST / WORKOUT TIMER</div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+      </div>
+      <div class="timer-btns">
+        <button class="btn-sm" onclick="toggleTimer()" id="timerStartBtn">▶ 시작</button>
+        <button class="btn-sm" onclick="resetTimer()">↺ 리셋</button>
+      </div>
+    </div>
+
+    <div class="card" id="detailCard"></div>
+
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-sub" onclick="prevDay()">◀ 이전 일차</button>
+      <button class="btn btn-sub btn-danger" onclick="deleteWorkout()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 루틴 추가 모달 -->
+<div class="modal" id="addModal">
+  <div class="modal-content">
+    <h2>새 루틴 생성</h2>
+    
+    <div>
+      <label>운동 방식</label>
+      <div class="type-tab">
+        <button id="tabSingle" class="active" onclick="switchType('single')">단일 운동</button>
+        <button id="tabMulti" onclick="switchType('multi')">서킷 / 루틴 (여러 운동)</button>
+      </div>
+    </div>
+
+    <div>
+      <label>일차별 변경</label>
+      <select id="progressionMode" style="width:100%;">
+        <option value="none">고정 (매일 횟수 변화 없음)</option>
+        <option value="pyramid">피라미드 (매일 +1개씩 증가)</option>
+      </select>
+    </div>
+
+    <div>
+      <label>루틴 이름</label>
+      <input type="text" id="inputName" placeholder="예: 상체 루틴" style="width:100%;">
+    </div>
+
+    <!-- 단일 운동 전용 입력 -->
+    <div id="singleSection">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <label style="margin:0;">세트 수</label>
+        <input type="number" id="inputSetCount" value="5" min="1" max="15" style="width:60px;" onchange="renderSingleInputs()">
+      </div>
+      <label>세트별 목표 설정 (Day 1 기준)</label>
+      <div id="singleInputsList"></div>
+    </div>
+
+    <!-- 서킷/멀티 운동 전용 입력 -->
+    <div id="multiSection" style="display:none;">
+      <label>운동 항목 구성 (Day 1 기준)</label>
+      <div id="multiInputsList"></div>
+      <button class="btn btn-sub" onclick="addMultiInputRow()" style="margin-top:4px; padding:6px; font-size:0.8rem;">+ 운동 항목 추가</button>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn btn-sub" onclick="closeAddModal()">취소</button>
+      <button class="btn" onclick="createWorkout()">생성하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 캘린더 모달 -->
+<div class="modal" id="calendarModal">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="calendar-header">
+      <button class="btn-sm" onclick="changeMonth(-1)">◀</button>
+      <h3 id="calMonthTitle" style="margin:0; font-size:1rem;">2026년 3월</h3>
+      <button class="btn-sm" onclick="changeMonth(1)">▶</button>
+    </div>
+    
+    <div class="calendar-grid">
+      <div class="cal-day-name" style="color:#ef4444;">일</div>
+      <div class="cal-day-name">월</div>
+      <div class="cal-day-name">화</div>
+      <div class="cal-day-name">수</div>
+      <div class="cal-day-name">목</div>
+      <div class="cal-day-name">금</div>
+      <div class="cal-day-name" style="color:#3b82f6;">토</div>
+    </div>
+    <div class="calendar-grid" id="calendarDays"></div>
+
+    <div class="modal-btns" style="margin-top:10px;">
+      <button class="btn btn-sub" onclick="closeCalendarModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let workouts = JSON.parse(localStorage.getItem('my_workouts_v4')) || [];
+  let historyLogs = JSON.parse(localStorage.getItem('my_workout_history_v4')) || {};
+  let customTitle = localStorage.getItem('my_app_title_v4') || 'My Routines';
+  
+  let currentWorkoutId = null;
+  let currentType = 'single';
+
+  // 타이머 관련 변수
+  let timerInterval = null;
+  let timerSeconds = 0;
+  let timerRunning = false;
+
+  // 캘린더 상태
+  let calDate = new Date();
+
+  function initTitle() {
+    document.getElementById('appTitle').innerText = customTitle;
+  }
+
+  function editAppTitle() {
+    const newTitle = prompt('메인 제목을 입력하세요:', customTitle);
+    if (newTitle !== null && newTitle.trim() !== '') {
+      customTitle = newTitle.trim();
+      localStorage.setItem('my_app_title_v4', customTitle);
+      document.getElementById('appTitle').innerText = customTitle;
+    }
+  }
+
+  function saveData() {
+    localStorage.setItem('my_workouts_v4', JSON.stringify(workouts));
+    localStorage.setItem('my_workout_history_v4', JSON.stringify(historyLogs));
+  }
+
+  function getTodayKey() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+  }
+
+  /* --- 타이머 기능 --- */
+  function toggleTimer() {
+    const btn = document.getElementById('timerStartBtn');
+    if (timerRunning) {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      btn.innerText = '▶ 시작';
+    } else {
+      timerRunning = true;
+      btn.innerText = '❚❚ 정지';
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    timerSeconds = 0;
+    document.getElementById('timerStartBtn').innerText = '▶ 시작';
+    updateTimerDisplay();
+  }
+
+  function updateTimerDisplay() {
+    const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+    const secs = (timerSeconds % 60).toString().padStart(2, '0');
+    document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
+  }
+
+  /* --- UI 및 리스트 렌더링 --- */
+  function renderList() {
+    const listEl = document.getElementById('workoutList');
+    if (workouts.length === 0) {
+      listEl.innerHTML = '<p style="text-align:center; color: var(--text-sub); margin-top: 40px;">+ 버튼을 눌러<br>나만의 운동 루틴을 추가해 보세요!</p>';
+      return;
+    }
+    listEl.innerHTML = workouts.map(w => {
+      const typeLabel = w.type === 'multi' ? '서킷 루틴' : '단일 운동';
+      const countLabel = w.type === 'multi' ? `${w.items.length}개 운동` : `${w.items.length}개 세트`;
+      const modeText = w.mode === 'pyramid' ? '피라미드' : '고정';
+      return `
+        <div class="workout-item" onclick="openDetail('${w.id}')">
+          <div>
+            <div class="workout-title">${w.name}</div>
+            <div class="workout-info">[${typeLabel}] Day ${w.day} · ${countLabel} · ${modeText}</div>
+          </div>
+          <div style="color: var(--accent-blue); font-size: 1.1rem;">➔</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* --- 캘린더 모달 기능 --- */
+  function openCalendarModal() {
+    calDate = new Date();
+    document.getElementById('calendarModal').style.display = 'flex';
+    renderCalendar();
+  }
+
+  function closeCalendarModal() {
+    document.getElementById('calendarModal').style.display = 'none';
+  }
+
+  function changeMonth(delta) {
+    calDate.setMonth(calDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const year = calDate.getFullYear();
+    const month = calDate.getMonth();
+    
+    document.getElementById('calMonthTitle').innerText = `${year}년 ${month + 1}월`;
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    const todayStr = getTodayKey();
+    const container = document.getElementById('calendarDays');
+    container.innerHTML = '';
+
+    for (let i = 0; i < firstDay; i++) {
+      container.innerHTML += `<div class="cal-cell" style="background:transparent;"></div>`;
+    }
+
+    for (let day = 1; day <= lastDate; day++) {
+      const mStr = String(month + 1).padStart(2, '0');
+      const dStr = String(day).padStart(2, '0');
+      const dateKey = `${year}-${mStr}-${dStr}`;
+      
+      const isToday = dateKey === todayStr ? 'today' : '';
+      const logs = historyLogs[dateKey] || [];
+
+      let tagsHtml = logs.map(name => `<div class="workout-tag" title="${name}">✓ ${name}</div>`).join('');
+
+      container.innerHTML += `
+        <div class="cal-cell ${isToday}">
+          <span class="date-num">${day}</span>
+          ${tagsHtml}
+        </div>
+      `;
+    }
+  }
+
+  /* --- 모달 및 추가 로직 --- */
+  function openAddModal() {
+    document.getElementById('addModal').style.display = 'flex';
+    document.getElementById('inputName').value = '';
+    document.getElementById('progressionMode').value = 'none';
+    switchType('single');
+  }
+
+  function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+  }
+
+  function switchType(type) {
+    currentType = type;
+    document.getElementById('tabSingle').className = type === 'single' ? 'active' : '';
+    document.getElementById('tabMulti').className = type === 'multi' ? 'active' : '';
+    document.getElementById('singleSection').style.display = type === 'single' ? 'block' : 'none';
+    document.getElementById('multiSection').style.display = type === 'multi' ? 'block' : 'none';
+
+    if (type === 'single') renderSingleInputs();
+    else renderMultiInputs();
+  }
+
+  function renderSingleInputs() {
+    const count = parseInt(document.getElementById('inputSetCount').value) || 5;
+    const container = document.getElementById('singleInputsList');
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      container.innerHTML += `
+        <div class="item-row">
+          <span style="font-size:0.8rem; color:var(--text-sub); width:42px;">${i+1}세트</span>
+          <input type="number" class="single-val" value="${10 - (i < 5 ? i : 4)}" min="1">
+          <select class="single-unit">
+            <option value="개">개</option>
+            <option value="분">분</option>
+            <option value="초">초</option>
+          </select>
+        </div>
+      `;
+    }
+  }
+
+  function renderMultiInputs() {
+    const container = document.getElementById('multiInputsList');
+    container.innerHTML = '';
+    const defaultEx = ['푸쉬업', '스쿼트', '플랭크', '버피테스트'];
+    const defaultVals = [15, 20, 1, 10];
+    const defaultUnits = ['개', '개', '분', '개'];
+
+    for (let i = 0; i < 4; i++) {
+      addMultiInputRow(defaultEx[i], defaultVals[i], defaultUnits[i]);
+    }
+  }
+
+  function addMultiInputRow(name = '', val = 10, unit = '개') {
+    const container = document.getElementById('multiInputsList');
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.innerHTML = `
+      <input type="text" class="multi-name" placeholder="운동명" value="${name}">
+      <input type="number" class="multi-val" value="${val}" min="1">
+      <select class="multi-unit">
+        <option value="개" ${unit==='개'?'selected':''}>개</option>
+        <option value="분" ${unit==='분'?'selected':''}>분</option>
+        <option value="초" ${unit==='초'?'selected':''}>초</option>
+      </select>
+      <button type="button" class="btn-del-row" onclick="removeMultiInputRow(this)">✕</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function removeMultiInputRow(btn) {
+    btn.parentElement.remove();
+  }
+
+  function createWorkout() {
+    const name = document.getElementById('inputName').value.trim();
+    const mode = document.getElementById('progressionMode').value;
+    if (!name) { alert('루틴 또는 운동 이름을 입력해 주세요!'); return; }
+
+    let items = [];
+    if (currentType === 'single') {
+      const vals = document.querySelectorAll('.single-val');
+      const units = document.querySelectorAll('.single-unit');
+      vals.forEach((v, i) => {
+        items.push({
+          label: `${i + 1}세트`,
+          target: parseInt(v.value) || 1,
+          unit: units[i].value
+        });
+      });
+    } else {
+      const names = document.querySelectorAll('.multi-name');
+      const vals = document.querySelectorAll('.multi-val');
+      const units = document.querySelectorAll('.multi-unit');
+      names.forEach((n, i) => {
+        if (n.value.trim() !== '') {
+          items.push({
+            label: n.value.trim(),
+            target: parseInt(vals[i].value) || 1,
+            unit: units[i].value
+          });
+        }
+      });
+      if (items.length === 0) { alert('최소 1개 이상의 운동을 입력해 주세요.'); return; }
+    }
+
+    const newWorkout = {
+      id: Date.now().toString(),
+      name: name,
+      type: currentType,
+      mode: mode,
+      day: 1,
+      items: items,
+      completed: new Array(items.length).fill(false)
+    };
+
+    workouts.push(newWorkout);
+    saveData();
+    closeAddModal();
+    renderList();
+  }
+
+  /* --- 상세 화면 및 운동 진행 --- */
+  function openDetail(id) {
+    currentWorkoutId = id;
+    document.getElementById('viewList').style.display = 'none';
+    document.getElementById('viewDetail').style.display = 'block';
+    resetTimer();
+    renderDetail();
+  }
+
+  function showList() {
+    document.getElementById('viewList').style.display = 'block';
+    document.getElementById('viewDetail').style.display = 'none';
+    resetTimer();
+    renderList();
+  }
+
+  function getCurrentTarget(item, day, mode) {
+    const dayOffset = day - 1;
+    if (mode === 'pyramid') {
+      return item.target + dayOffset;
+    }
+    return item.target;
+  }
+
+  function renderDetail() {
+    const w = workouts.find(item => item.id === currentWorkoutId);
+    if (!w) return;
+
+    document.getElementById('detailTitle').innerText = w.name;
+    const card = document.getElementById('detailCard');
+
+    let modeLabel = w.mode === 'pyramid' ? '피라미드 (+1)' : '고정';
+
+    let setListHtml = w.items.map((item, idx) => {
+      const currentVal = getCurrentTarget(item, w.day, w.mode);
+      return `
+        <div class="set-item ${w.completed[idx] ? 'done' : ''}" onclick="toggleCheck(${idx})">
+          <span><strong>${item.label}</strong> : <span class="set-reps">${currentVal} ${item.unit}</span></span>
+          <div class="checkbox"></div>
+        </div>
+      `;
+    }).join('');
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span class="day-badge">Day ${w.day}</span>
+          <span class="mode-badge">${modeLabel}</span>
+        </div>
+        <span style="font-size:0.8rem; color:var(--text-sub);">${w.type === 'multi' ? '서킷 루틴' : '단일 운동'}</span>
+      </div>
+      <div class="set-list">${setListHtml}</div>
+      <button class="btn" onclick="completeDay()">오늘 운동 완료!</button>
+    `;
+  }
+
+  function toggleCheck(index) {
+    const w = workouts.find(item => item.id === currentWorkoutId);
+    if (!w.completed) w.completed = new Array(w.items.length).fill(false);
+    w.completed[index] = !w.completed[index];
+    saveData();
+    renderDetail();
+  }
+
+  function completeDay() {
+    const w = workouts.find(item => item.id === currentWorkoutId);
+    
+    const todayKey = getTodayKey();
+    if (!historyLogs[todayKey]) historyLogs[todayKey] = [];
+    if (!historyLogs[todayKey].includes(w.name)) {
+      historyLogs[todayKey].push(w.name);
+    }
+
+    w.day++;
+    w.completed = new Array(w.items.length).fill(false);
+    saveData();
+    alert(`🎉 '${w.name}' 완료! 달력에 오늘 운동이 기록되었습니다.`);
+    renderDetail();
+  }
+
+  function prevDay() {
+    const w = workouts.find(item => item.id === currentWorkoutId);
+    if (w.day > 1) {
+      w.day--;
+      w.completed = new Array(w.items.length).fill(false);
+      saveData();
+      renderDetail();
+    }
+  }
+
+  function deleteWorkout() {
+    if (confirm("이 운동 루틴을 삭제하시겠습니까?")) {
+      workouts = workouts.filter(item => item.id !== currentWorkoutId);
+      saveData();
+      showList();
+    }
+  }
+
+  initTitle();
+  renderList();
+</script>
+</body>
+</html>
