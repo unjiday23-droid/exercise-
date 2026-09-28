@@ -143,6 +143,17 @@
     }
     .modal-btns { display: flex; gap: 8px; margin-top: 6px; }
 
+    /* Custom Sub-box for Options */
+    .option-box {
+      background: #0f172a;
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     /* Custom Item Groups */
     .item-row {
       display: flex;
@@ -251,7 +262,9 @@
       align-items: center;
       font-size: 0.7rem;
       border: 1px solid transparent;
+      cursor: pointer;
     }
+    .cal-cell:hover { background: #1e293b; }
     .cal-cell.today { border-color: var(--accent-blue); }
     .cal-cell .date-num { font-weight: bold; margin-bottom: 1px; }
     .cal-cell .workout-tag {
@@ -265,6 +278,18 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       margin-top: 1px;
+    }
+
+    /* Log Edit List */
+    .log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -330,10 +355,37 @@
 
     <div>
       <label>Progression Mode</label>
-      <select id="progressionMode" style="width:100%;">
+      <select id="progressionMode" style="width:100%;" onchange="toggleOverloadSettings()">
         <option value="none">Fixed (No daily change)</option>
         <option value="pyramid">Reverse Pyramid Progression (Custom Sequence)</option>
+        <option value="custom">Custom Overload (사용자 지정 과부하)</option>
       </select>
+    </div>
+
+    <!-- Custom Overload Details Box -->
+    <div id="customOverloadBox" class="option-box" style="display:none;">
+      <div>
+        <label>증가 주기 (Frequency)</label>
+        <select id="overloadFreq" style="width:100%;">
+          <option value="day">매일 (Daily)</option>
+          <option value="week">매주 (Weekly / 7일마다)</option>
+          <option value="month">매월 (Monthly / 30일마다)</option>
+        </select>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <label>증가 수치 (Amount)</label>
+          <input type="number" id="overloadAmount" value="1" min="1" style="width:100%;">
+        </div>
+        <div style="flex:1;">
+          <label>증가 방식 (Target)</label>
+          <select id="overloadTarget" style="width:100%;">
+            <option value="all">모든 세트 각각 (Each Set)</option>
+            <option value="total">총합만 (Total Sum)</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div>
@@ -394,6 +446,17 @@
   </div>
 </div>
 
+<!-- Calendar Day Log Detail Modal -->
+<div class="modal" id="dayLogModal">
+  <div class="modal-content" style="max-width: 360px;">
+    <h3 id="dayLogTitle" style="margin:0; font-size:1.05rem; color:var(--accent-blue);">2026-03-28 Logs</h3>
+    <div id="dayLogList" style="margin-top:8px;"></div>
+    <div class="modal-btns" style="margin-top:10px;">
+      <button class="btn btn-sub" onclick="closeDayLogModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let workouts = JSON.parse(localStorage.getItem('my_workouts_v4')) || [];
   let historyLogs = JSON.parse(localStorage.getItem('my_workout_history_v4')) || {};
@@ -402,6 +465,7 @@
   let currentWorkoutId = null;
   let editingWorkoutId = null; 
   let currentType = 'single';
+  let selectedDateKey = null;
 
   // Timer variables
   let timerInterval = null;
@@ -470,24 +534,62 @@
     document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
   }
 
-  /* --- Reverse Pyramid Progression Logic --- */
+  function toggleOverloadSettings() {
+    const mode = document.getElementById('progressionMode').value;
+    document.getElementById('customOverloadBox').style.display = (mode === 'custom') ? 'flex' : 'none';
+  }
+
+  /* --- Custom Overload & Reverse Pyramid Calculation --- */
+  function calculateTargets(w) {
+    if (w.mode === 'pyramid') {
+      return getCustomPyramidTargets(w.items, w.day);
+    } else if (w.mode === 'custom' && w.overloadConfig) {
+      const cfg = w.overloadConfig;
+      let multiplier = 0;
+      
+      if (cfg.freq === 'day') {
+        multiplier = w.day - 1;
+      } else if (cfg.freq === 'week') {
+        multiplier = Math.floor((w.day - 1) / 7);
+      } else if (cfg.freq === 'month') {
+        multiplier = Math.floor((w.day - 1) / 30);
+      }
+
+      const totalIncrease = multiplier * cfg.amount;
+
+      if (cfg.target === 'all') {
+        // 모든 세트가 각각 N개씩 증가
+        const targets = w.items.map(item => item.target + totalIncrease);
+        return { isRest: false, targets: targets };
+      } else {
+        // 총합 기준 N개 증가 (뒤에서부터 +1개씩 차례대로)
+        let targets = w.items.map(item => item.target);
+        const setLen = w.items.length;
+        for (let i = 0; i < totalIncrease; i++) {
+          const idx = setLen - 1 - (i % setLen);
+          targets[idx] += 1;
+        }
+        return { isRest: false, targets: targets };
+      }
+    } else {
+      // Fixed Mode
+      return { isRest: false, targets: w.items.map(i => i.target) };
+    }
+  }
+
   function getCustomPyramidTargets(items, day) {
     const totalSets = items.length;
-    const cycleLength = totalSets + 1; // 5세트 기준 6일 주기 (Day 1~5 운동, Day 6 휴식)
+    const cycleLength = totalSets + 1;
     
     const currentCycle = Math.floor((day - 1) / cycleLength);
-    const dayInCycle = ((day - 1) % cycleLength) + 1; // 1 ~ cycleLength
+    const dayInCycle = ((day - 1) % cycleLength) + 1;
 
-    // 휴식일인 경우
     if (dayInCycle === cycleLength) {
       return { isRest: true, targets: [] };
     }
 
-    // 기본 Base 값 계산 (사이클이 진행될 때마다 첫 세트 base가 +1씩 증가)
-    let targets = items.map((item, idx) => item.target + currentCycle);
+    let targets = items.map((item) => item.target + currentCycle);
 
-    // 해당 사이클 내의 일수에 따른 뒤에서부터 +1 오버로드 로직
-    // Day 1: [0], Day 2: 세트5 +1, Day 3: 세트4 +1, Day 4: 세트3 +1...
     if (dayInCycle > 1) {
       const incrementIndex = totalSets - (dayInCycle - 1);
       if (incrementIndex >= 0 && incrementIndex < totalSets) {
@@ -508,7 +610,10 @@
     listEl.innerHTML = workouts.map(w => {
       const typeLabel = w.type === 'multi' ? 'Circuit' : 'Single Exercise';
       const countLabel = w.type === 'multi' ? `${w.items.length} Exercises` : `${w.items.length} Sets`;
-      const modeText = w.mode === 'pyramid' ? 'Rev Pyramid' : 'Fixed';
+      
+      let modeText = 'Fixed';
+      if (w.mode === 'pyramid') modeText = 'Rev Pyramid';
+      else if (w.mode === 'custom') modeText = 'Custom Overload';
       
       let statusText = `Day ${w.day}`;
       if (w.mode === 'pyramid') {
@@ -528,7 +633,7 @@
     }).join('');
   }
 
-  /* --- Calendar Modal --- */
+  /* --- Calendar Modal & Log Deletion --- */
   function openCalendarModal() {
     calDate = new Date();
     document.getElementById('calendarModal').style.display = 'flex';
@@ -558,7 +663,7 @@
     container.innerHTML = '';
 
     for (let i = 0; i < firstDay; i++) {
-      container.innerHTML += `<div class="cal-cell" style="background:transparent;"></div>`;
+      container.innerHTML += `<div class="cal-cell" style="background:transparent; cursor:default;"></div>`;
     }
 
     for (let day = 1; day <= lastDate; day++) {
@@ -572,11 +677,51 @@
       let tagsHtml = logs.map(name => `<div class="workout-tag" title="${name}">✓ ${name}</div>`).join('');
 
       container.innerHTML += `
-        <div class="cal-cell ${isToday}">
+        <div class="cal-cell ${isToday}" onclick="openDayLogModal('${dateKey}')">
           <span class="date-num">${day}</span>
           ${tagsHtml}
         </div>
       `;
+    }
+  }
+
+  function openDayLogModal(dateKey) {
+    selectedDateKey = dateKey;
+    document.getElementById('dayLogTitle').innerText = `${dateKey} Completed Workouts`;
+    renderDayLogs();
+    document.getElementById('dayLogModal').style.display = 'flex';
+  }
+
+  function closeDayLogModal() {
+    document.getElementById('dayLogModal').style.display = 'none';
+  }
+
+  function renderDayLogs() {
+    const listContainer = document.getElementById('dayLogList');
+    const logs = historyLogs[selectedDateKey] || [];
+
+    if (logs.length === 0) {
+      listContainer.innerHTML = '<p style="text-align:center; color:var(--text-sub); font-size:0.85rem; padding:10px 0;">No completed workouts on this date.</p>';
+      return;
+    }
+
+    listContainer.innerHTML = logs.map((workoutName, index) => `
+      <div class="log-item">
+        <span>⚡ ${workoutName}</span>
+        <button class="btn-del-row" style="height:26px; width:26px; font-size:0.75rem;" onclick="deleteDayLog(${index})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function deleteDayLog(index) {
+    if (confirm("Delete this workout record from calendar?")) {
+      historyLogs[selectedDateKey].splice(index, 1);
+      if (historyLogs[selectedDateKey].length === 0) {
+        delete historyLogs[selectedDateKey];
+      }
+      saveData();
+      renderDayLogs();
+      renderCalendar();
     }
   }
 
@@ -588,6 +733,7 @@
     document.getElementById('addModal').style.display = 'flex';
     document.getElementById('inputName').value = '';
     document.getElementById('progressionMode').value = 'none';
+    toggleOverloadSettings();
     switchType('single');
   }
 
@@ -601,8 +747,15 @@
     document.getElementById('addModal').style.display = 'flex';
 
     document.getElementById('inputName').value = w.name;
-    document.getElementById('progressionMode').value = w.mode;
+    document.getElementById('progressionMode').value = w.mode || 'none';
     
+    if (w.mode === 'custom' && w.overloadConfig) {
+      document.getElementById('overloadFreq').value = w.overloadConfig.freq;
+      document.getElementById('overloadAmount').value = w.overloadConfig.amount;
+      document.getElementById('overloadTarget').value = w.overloadConfig.target;
+    }
+    toggleOverloadSettings();
+
     switchType(w.type);
 
     if (w.type === 'single') {
@@ -774,12 +927,19 @@
       if (items.length === 0) { alert('Please add at least one exercise.'); return; }
     }
 
+    const overloadConfig = {
+      freq: document.getElementById('overloadFreq').value,
+      amount: parseInt(document.getElementById('overloadAmount').value) || 1,
+      target: document.getElementById('overloadTarget').value
+    };
+
     if (editingWorkoutId) {
       const w = workouts.find(item => item.id === editingWorkoutId);
       if (w) {
         w.name = name;
         w.type = currentType;
         w.mode = mode;
+        w.overloadConfig = overloadConfig;
         w.items = items;
         w.completed = new Array(items.length).fill(false);
       }
@@ -789,6 +949,7 @@
         name: name,
         type: currentType,
         mode: mode,
+        overloadConfig: overloadConfig,
         day: 1,
         items: items,
         completed: new Array(items.length).fill(false)
@@ -827,95 +988,60 @@
     document.getElementById('detailTitle').innerText = w.name;
     const card = document.getElementById('detailCard');
 
-    let modeLabel = w.mode === 'pyramid' ? 'Rev Pyramid' : 'Fixed';
+    let modeLabel = 'Fixed';
+    if (w.mode === 'pyramid') modeLabel = 'Rev Pyramid';
+    else if (w.mode === 'custom') modeLabel = 'Custom Overload';
 
-    // 역피라미드 로직 적용
-    if (w.mode === 'pyramid') {
-      const pData = getCustomPyramidTargets(w.items, w.day);
+    const calcData = calculateTargets(w);
 
-      if (pData.isRest) {
-        // 휴식일 화면
-        card.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <span class="day-badge" style="background:#f59e0b;">Day ${w.day}</span>
-              <span class="mode-badge">${modeLabel}</span>
-            </div>
-          </div>
-          <div style="text-align:center; padding: 30px 10px;">
-            <div style="font-size: 3rem; margin-bottom:10px;">🛌</div>
-            <h2 style="margin:0; font-size:1.2rem;">Rest Day!</h2>
-            <p style="color:var(--text-sub); font-size:0.85rem; margin-top:6px;">Take a well-deserved break today.<br>Your muscles grow during rest!</p>
-          </div>
-          <button class="btn" style="background:#f59e0b;" onclick="completeDay()">Complete Rest Day</button>
-        `;
-        return;
-      }
-
-      // 운동일 계산
-      let currentTotals = {};
-      let setListHtml = w.items.map((item, idx) => {
-        const currentVal = pData.targets[idx];
-        currentTotals[item.unit] = (currentTotals[item.unit] || 0) + currentVal;
-
-        return `
-          <div class="set-item ${w.completed[idx] ? 'done' : ''}" onclick="toggleCheck(${idx})">
-            <span><strong>${item.label}</strong> : <span class="set-reps">${currentVal} ${item.unit}</span></span>
-            <div class="checkbox"></div>
-          </div>
-        `;
-      }).join('');
-
-      let totalTextArr = [];
-      for (let u in currentTotals) {
-        totalTextArr.push(`${currentTotals[u]} ${u}`);
-      }
-
+    if (calcData.isRest) {
       card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <span class="day-badge">Day ${w.day}</span>
+            <span class="day-badge" style="background:#f59e0b;">Day ${w.day}</span>
             <span class="mode-badge">${modeLabel}</span>
           </div>
-          <span style="font-size:0.8rem; color:var(--text-sub);">${w.type === 'multi' ? 'Circuit' : 'Single Exercise'}</span>
         </div>
-        <div class="total-badge">⚡ Total Goal: ${totalTextArr.join(' + ')}</div>
-        <div class="set-list">${setListHtml}</div>
-        <button class="btn" onclick="completeDay()">Complete Workout!</button>
-      `;
-    } else {
-      // Fixed (고정) 모드
-      let currentTotals = {};
-      let setListHtml = w.items.map((item, idx) => {
-        const currentVal = item.target;
-        currentTotals[item.unit] = (currentTotals[item.unit] || 0) + currentVal;
-
-        return `
-          <div class="set-item ${w.completed[idx] ? 'done' : ''}" onclick="toggleCheck(${idx})">
-            <span><strong>${item.label}</strong> : <span class="set-reps">${currentVal} ${item.unit}</span></span>
-            <div class="checkbox"></div>
-          </div>
-        `;
-      }).join('');
-
-      let totalTextArr = [];
-      for (let u in currentTotals) {
-        totalTextArr.push(`${currentTotals[u]} ${u}`);
-      }
-
-      card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <span class="day-badge">Day ${w.day}</span>
-            <span class="mode-badge">${modeLabel}</span>
-          </div>
-          <span style="font-size:0.8rem; color:var(--text-sub);">${w.type === 'multi' ? 'Circuit' : 'Single Exercise'}</span>
+        <div style="text-align:center; padding: 30px 10px;">
+          <div style="font-size: 3rem; margin-bottom:10px;">🛌</div>
+          <h2 style="margin:0; font-size:1.2rem;">Rest Day!</h2>
+          <p style="color:var(--text-sub); font-size:0.85rem; margin-top:6px;">Take a well-deserved break today.<br>Your muscles grow during rest!</p>
         </div>
-        <div class="total-badge">⚡ Total Goal: ${totalTextArr.join(' + ')}</div>
-        <div class="set-list">${setListHtml}</div>
-        <button class="btn" onclick="completeDay()">Complete Workout!</button>
+        <button class="btn" style="background:#f59e0b;" onclick="completeDay()">Complete Rest Day</button>
       `;
+      return;
     }
+
+    let currentTotals = {};
+    let setListHtml = w.items.map((item, idx) => {
+      const currentVal = calcData.targets[idx];
+      currentTotals[item.unit] = (currentTotals[item.unit] || 0) + currentVal;
+
+      return `
+        <div class="set-item ${w.completed[idx] ? 'done' : ''}" onclick="toggleCheck(${idx})">
+          <span><strong>${item.label}</strong> : <span class="set-reps">${currentVal} ${item.unit}</span></span>
+          <div class="checkbox"></div>
+        </div>
+      `;
+    }).join('');
+
+    let totalTextArr = [];
+    for (let u in currentTotals) {
+      totalTextArr.push(`${currentTotals[u]} ${u}`);
+    }
+
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span class="day-badge">Day ${w.day}</span>
+          <span class="mode-badge">${modeLabel}</span>
+        </div>
+        <span style="font-size:0.8rem; color:var(--text-sub);">${w.type === 'multi' ? 'Circuit' : 'Single Exercise'}</span>
+      </div>
+      <div class="total-badge">⚡ Total Goal: ${totalTextArr.join(' + ')}</div>
+      <div class="set-list">${setListHtml}</div>
+      <button class="btn" onclick="completeDay()">Complete Workout!</button>
+    `;
   }
 
   function toggleCheck(index) {
