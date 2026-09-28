@@ -1,1237 +1,433 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>My Workout Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout Routine & Circuit Tracker</title>
   <style>
     :root {
       --bg-color: #0f172a;
       --card-bg: #1e293b;
-      --accent-blue: #3b82f6;
-      --accent-green: #10b981;
-      --accent-orange: #f59e0b;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
       --text-main: #f8fafc;
-      --text-sub: #94a3b8;
-      --border-color: #334155;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #22c55e;
+      --danger: #ef4444;
     }
-    * { box-sizing: border-box; }
-    body {
+
+    * {
+      box-sizing: border-box;
       margin: 0;
-      padding: 12px;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
       background-color: var(--bg-color);
       color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 24px 16px;
       display: flex;
       justify-content: center;
-      overflow-x: hidden;
+      min-height: 100vh;
     }
+
     .container {
       width: 100%;
-      max-width: 440px;
+      max-width: 650px;
       display: flex;
       flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select {
+      background: var(--bg-color);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 0;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 1.3rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .header h1:hover { opacity: 0.8; }
-    .edit-icon { font-size: 0.8rem; opacity: 0.6; }
-    
-    .header-btns { display: flex; gap: 8px; }
-    .btn-icon {
-      background: var(--accent-blue);
-      color: white;
-      border: none;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-      margin-bottom: 8px;
-    }
-    .workout-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: var(--card-bg);
-      padding: 14px 16px;
-      border-radius: 14px;
-      cursor: pointer;
-      margin-bottom: 10px;
-      border: 1px solid var(--border-color);
-    }
-    .workout-title { font-size: 1.1rem; font-weight: bold; }
-    .workout-info { font-size: 0.8rem; color: var(--text-sub); margin-top: 2px; }
-    
-    /* Timer & Stopwatch Style */
-    .timer-card {
-      background: #0284c7;
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .timer-tabs {
-      display: flex;
-      gap: 6px;
-    }
-    .timer-tab-btn {
-      flex: 1;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .timer-tab-btn.active {
-      background: rgba(255, 255, 255, 0.3);
-      border-color: white;
-    }
-    .timer-main-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .timer-display { font-size: 1.4rem; font-weight: bold; font-family: monospace; }
-    .timer-inputs { display: flex; align-items: center; gap: 4px; }
-    .timer-inputs input {
-      width: 45px;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: white;
-      text-align: center;
-      border-radius: 4px;
-      padding: 4px;
-      font-size: 0.9rem;
-      font-weight: bold;
-    }
-    .timer-btns { display: flex; gap: 6px; }
-    .btn-sm {
-      padding: 5px 10px;
-      border-radius: 6px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      background: rgba(255,255,255,0.2);
-      color: white;
-      font-size: 0.8rem;
-    }
-
-    /* Modal Styling */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      z-index: 100;
-    }
-    .modal-content {
-      background: var(--card-bg);
-      padding: 16px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 88vh;
-      overflow-y: auto;
-    }
-    .modal-content h2 { margin: 0; font-size: 1.1rem; }
-    .modal-content label { font-size: 0.8rem; color: var(--text-sub); margin-top: 2px; display: block; }
-    .modal-content input, .modal-content select {
-      background: #0f172a;
-      border: 1px solid var(--border-color);
-      color: white;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 0.88rem;
-    }
-    .modal-btns { display: flex; gap: 8px; margin-top: 6px; }
-
-    /* Custom Sub-box for Options */
-    .option-box {
-      background: #0f172a;
-      border: 1px dashed var(--border-color);
-      border-radius: 8px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    /* Custom Item Groups */
-    .item-row {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      margin-bottom: 6px;
-      width: 100%;
-    }
-    .item-row input[type="text"] { flex: 1; min-width: 0; padding: 6px 8px; }
-    .item-row input[type="number"] { width: 55px; text-align: center; padding: 6px 4px; }
-    .item-row select { width: 70px; padding: 6px 2px; text-align: center; }
-    .btn-del-row {
-      background: #ef4444;
-      color: white;
-      border: none;
-      width: 30px;
-      height: 33px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    /* Set Checklist Styling */
-    .day-badge {
-      display: inline-block;
-      background-color: var(--accent-blue);
-      color: white;
-      padding: 3px 10px;
-      border-radius: 16px;
-      font-size: 0.8rem;
-      font-weight: bold;
-    }
-    .mode-badge {
-      display: inline-block;
-      background-color: var(--border-color);
-      color: var(--text-sub);
-      padding: 3px 8px;
-      border-radius: 16px;
-      font-size: 0.75rem;
-      margin-left: 4px;
-    }
-    .total-badge {
-      display: block;
-      margin-top: 6px;
-      font-size: 0.85rem;
-      color: var(--accent-green);
-      font-weight: bold;
-    }
-    .set-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-    .set-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: var(--border-color);
-      padding: 12px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .set-item.done { background-color: #064e3b; opacity: 0.7; }
-    .set-item.done .set-reps { text-decoration: line-through; }
-    .checkbox {
-      width: 20px; height: 20px;
-      border-radius: 50%;
-      border: 2px solid #64748b;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .set-item.done .checkbox {
-      border-color: var(--accent-green);
-      background-color: var(--accent-green);
-    }
-    .set-item.done .checkbox::after { content: '✓'; color: white; font-size: 12px; }
 
     .btn {
-      width: 100%; padding: 10px; border: none; border-radius: 8px;
-      font-size: 0.9rem; font-weight: bold; color: white;
-      background-color: var(--accent-blue); cursor: pointer; margin-top: 6px;
-    }
-    .btn-sub { background-color: var(--border-color); color: #cbd5e1; }
-    .btn-danger { background-color: #ef4444; }
-    .back-btn { background: none; border: none; color: var(--accent-blue); font-size: 0.95rem; cursor: pointer; padding: 0; }
-    .edit-btn { background: none; border: none; color: var(--accent-orange); font-size: 0.9rem; cursor: pointer; padding: 0; font-weight: bold; }
-    .type-tab { display: flex; gap: 6px; margin-bottom: 4px; }
-    .type-tab button {
-      flex: 1; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color);
-      background: #0f172a; color: var(--text-sub); cursor: pointer; font-size: 0.8rem;
-    }
-    .type-tab button.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
-
-    /* Calendar Grid Styling */
-    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
-    .cal-day-name { font-size: 0.7rem; color: var(--text-sub); font-weight: bold; padding-bottom: 4px; }
-    .cal-cell {
-      min-height: 42px;
-      background: #0f172a;
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      border: none;
+      padding: 12px;
       border-radius: 6px;
-      padding: 2px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-size: 0.7rem;
-      border: 1px solid transparent;
       cursor: pointer;
-    }
-    .cal-cell:hover { background: #1e293b; }
-    .cal-cell.today { border-color: var(--accent-blue); }
-    .cal-cell .date-num { font-weight: bold; margin-bottom: 1px; }
-    .cal-cell .workout-tag {
-      background: var(--accent-green);
-      color: white;
-      font-size: 0.6rem;
-      padding: 1px 2px;
-      border-radius: 3px;
+      transition: background 0.2s ease;
       width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 1px;
+      margin-top: 6px;
     }
 
-    /* Log Edit List */
-    .log-item {
+    .btn:hover {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .routine-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #0f172a;
+      margin-bottom: 16px;
+    }
+
+    .routine-badge {
+      background: #0284c7;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .exercise-item {
+      background: var(--bg-color);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .exercise-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sets-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .set-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card-bg);
       padding: 8px 12px;
       border-radius: 6px;
-      margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .set-number {
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      width: 50px;
+    }
+
+    .set-info {
+      flex-grow: 1;
       font-size: 0.9rem;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .checkbox-container input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--success);
+    }
+
+    .set-row.completed {
+      border-color: var(--success);
+      opacity: 0.6;
+    }
+
+    .circuit-tracker {
+      background: #0369a1;
+      color: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .circuit-tracker h3 {
+      font-size: 1rem;
+    }
+
+    .circuit-btn {
+      background: white;
+      color: #0369a1;
+      border: none;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .circuit-btn:hover {
+      background: #e0f2fe;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 20px;
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <!-- Main Routines View -->
-  <div id="viewList">
-    <div class="header">
-      <h1 onclick="editAppTitle()" title="Click to edit title">
-        <span id="appTitle">My Routines</span>
-        <span class="edit-icon">✏️</span>
-      </h1>
-      <div class="header-btns">
-        <button class="btn-icon" onclick="openCalendarModal()" title="Workout Calendar">📅</button>
-        <button class="btn-icon" onclick="openAddModal()" title="Add Routine">+</button>
-      </div>
-    </div>
-    <div id="workoutList"></div>
-  </div>
+  <div class="container">
+    <header>
+      <h1>Workout Routine Tracker</h1>
+      <p>Configure routines, circuits, and track completed sets</p>
+    </header>
 
-  <!-- Routine Detail View -->
-  <div id="viewDetail" style="display: none;">
-    <div class="header">
-      <button class="back-btn" onclick="showList()">◀ Back</button>
-      <h1 id="detailTitle" style="font-size: 1.1rem;">Routine Title</h1>
-      <button class="edit-btn" onclick="openEditModal()">✏️ Edit</button>
-    </div>
+    <!-- Configure Form -->
+    <div class="card">
+      <h2>Add Exercise to Routine</h2>
+      <form id="exercise-form">
+        <div class="form-group">
+          <label for="exercise-name">Exercise Name</label>
+          <input type="text" id="exercise-name" placeholder="e.g., Push-ups, Squats, Bench Press" required />
+        </div>
 
-    <!-- Timer / Stopwatch Section -->
-    <div class="timer-card">
-      <div class="timer-tabs">
-        <button class="timer-tab-btn active" id="tabTimerMode" onclick="switchTimerMode('timer')">⏱️ Timer</button>
-        <button class="timer-tab-btn" id="tabStopwatchMode" onclick="switchTimerMode('stopwatch')">⏲️ Stopwatch</button>
-      </div>
-
-      <div class="timer-main-row">
-        <!-- Timer Display & Input -->
-        <div id="timerModeArea" style="display:flex; align-items:center; gap:8px;">
-          <div class="timer-inputs" id="timerInputControls">
-            <input type="number" id="timerMin" value="1" min="0" max="99" placeholder="m"> :
-            <input type="number" id="timerSec" value="30" min="0" max="59" placeholder="s">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="target-sets">Target Sets</label>
+            <input type="number" id="target-sets" min="1" max="20" value="3" required />
           </div>
-          <div class="timer-display" id="timerDisplay" style="display:none;">01:30</div>
+          <div class="form-group">
+            <label for="target-reps">Target Reps / Duration</label>
+            <input type="text" id="target-reps" placeholder="e.g., 12 reps or 45 sec" required />
+          </div>
         </div>
 
-        <!-- Stopwatch Display -->
-        <div id="stopwatchModeArea" style="display:none;">
-          <div class="timer-display" id="stopwatchDisplay">00:00</div>
-        </div>
-
-        <div class="timer-btns">
-          <button class="btn-sm" onclick="toggleClock()" id="clockStartBtn">▶ Start</button>
-          <button class="btn-sm" onclick="resetClock()">↺ Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" id="detailCard"></div>
-
-    <div style="display:flex; gap:8px;">
-      <button class="btn btn-sub" onclick="prevDay()">◀ Prev Day</button>
-      <button class="btn btn-sub btn-danger" onclick="deleteWorkout()">Delete</button>
-    </div>
-  </div>
-</div>
-
-<!-- Add / Edit Routine Modal -->
-<div class="modal" id="addModal">
-  <div class="modal-content">
-    <h2 id="modalHeaderTitle">Create New Routine</h2>
-    
-    <div>
-      <label>Workout Type</label>
-      <div class="type-tab">
-        <button id="tabSingle" class="active" onclick="switchType('single')">Single Exercise</button>
-        <button id="tabMulti" onclick="switchType('multi')">Circuit / Routine</button>
-      </div>
-    </div>
-
-    <div>
-      <label>Progression Mode</label>
-      <select id="progressionMode" style="width:100%;" onchange="toggleOverloadSettings()">
-        <option value="none">Fixed (No change)</option>
-        <option value="pyramid">Reverse Pyramid Progression</option>
-        <option value="custom">Custom Overload</option>
-      </select>
-    </div>
-
-    <!-- Custom Overload Details Box -->
-    <div id="customOverloadBox" class="option-box" style="display:none;">
-      <div>
-        <label>Frequency</label>
-        <select id="overloadFreq" style="width:100%;">
-          <option value="day">Daily</option>
-          <option value="week">Weekly (Every 7 Days)</option>
-          <option value="month">Monthly (Every 30 Days)</option>
-        </select>
-      </div>
-
-      <div style="display:flex; gap:8px;">
-        <div style="flex:1;">
-          <label>Increase Amount</label>
-          <input type="number" id="overloadAmount" value="1" min="1" style="width:100%;">
-        </div>
-        <div style="flex:1;">
-          <label>Target Sets</label>
-          <select id="overloadTarget" style="width:100%;">
-            <option value="all">Each Set (+N)</option>
-            <option value="total">Total Sum (+N)</option>
+        <div class="form-group">
+          <label for="routine-type">Mode / Routine Type</label>
+          <select id="routine-type">
+            <option value="Standard">Standard Routine (Set by Set)</option>
+            <option value="Circuit">Circuit Mode (Round by Round)</option>
           </select>
         </div>
+
+        <button type="submit" class="btn">Add Exercise</button>
+      </form>
+    </div>
+
+    <!-- Active Workout Tracker -->
+    <div class="card">
+      <div class="routine-header">
+        <h2>Active Workout</h2>
+        <span id="mode-badge" class="routine-badge">Standard</span>
+      </div>
+
+      <!-- Circuit Round Tracker (Only shown in Circuit Mode) -->
+      <div id="circuit-header" class="circuit-tracker" style="display: none;">
+        <div>
+          <h3>Circuit Progress</h3>
+          <p id="circuit-status">Round 1</p>
+        </div>
+        <button id="next-round-btn" class="circuit-btn">Complete Round</button>
+      </div>
+
+      <!-- Exercise List -->
+      <div id="exercise-list">
+        <div class="empty-state">No exercises added yet. Add one above!</div>
       </div>
     </div>
-
-    <div>
-      <label>Routine Name</label>
-      <input type="text" id="inputName" placeholder="e.g. Upper Body Workout" style="width:100%;">
-    </div>
-
-    <!-- Single Exercise Inputs -->
-    <div id="singleSection">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-        <label style="margin:0;">Number of Sets</label>
-        <input type="number" id="inputSetCount" value="5" min="1" max="15" style="width:60px;" onchange="renderSingleInputs()">
-      </div>
-      <label>Set Goals (Day 1 Base)</label>
-      <div id="singleInputsList"></div>
-    </div>
-
-    <!-- Circuit/Multi Exercise Inputs -->
-    <div id="multiSection" style="display:none;">
-      <label>Exercise List (Day 1 Base)</label>
-      <div id="multiInputsList"></div>
-      <button class="btn btn-sub" onclick="addMultiInputRow()" style="margin-top:4px; padding:6px; font-size:0.8rem;">+ Add Exercise</button>
-    </div>
-
-    <!-- Live Total Summary -->
-    <div id="modalTotalSummary" style="font-weight:bold; color:var(--accent-green); font-size:0.85rem;">Total: 0</div>
-
-    <div class="modal-btns">
-      <button class="btn btn-sub" onclick="closeAddModal()">Cancel</button>
-      <button class="btn" id="saveModalBtn" onclick="saveWorkout()">Create</button>
-    </div>
   </div>
-</div>
 
-<!-- Calendar Modal -->
-<div class="modal" id="calendarModal">
-  <div class="modal-content" style="max-width: 400px;">
-    <div class="calendar-header">
-      <button class="btn-sm" onclick="changeMonth(-1)">◀</button>
-      <h3 id="calMonthTitle" style="margin:0; font-size:1rem;">March 2026</h3>
-      <button class="btn-sm" onclick="changeMonth(1)">▶</button>
-    </div>
-    
-    <div class="calendar-grid">
-      <div class="cal-day-name" style="color:#ef4444;">Sun</div>
-      <div class="cal-day-name">Mon</div>
-      <div class="cal-day-name">Tue</div>
-      <div class="cal-day-name">Wed</div>
-      <div class="cal-day-name">Thu</div>
-      <div class="cal-day-name">Fri</div>
-      <div class="cal-day-name" style="color:#3b82f6;">Sat</div>
-    </div>
-    <div class="calendar-grid" id="calendarDays"></div>
+  <script>
+    const exercises = [];
+    let currentMode = "Standard";
+    let completedCircuitRounds = 0;
 
-    <div class="modal-btns" style="margin-top:10px;">
-      <button class="btn btn-sub" onclick="closeCalendarModal()">Close</button>
-    </div>
-  </div>
-</div>
+    const form = document.getElementById('exercise-form');
+    const exerciseList = document.getElementById('exercise-list');
+    const modeBadge = document.getElementById('mode-badge');
+    const circuitHeader = document.getElementById('circuit-header');
+    const circuitStatus = document.getElementById('circuit-status');
+    const nextRoundBtn = document.getElementById('next-round-btn');
 
-<!-- Calendar Day Log Detail Modal -->
-<div class="modal" id="dayLogModal">
-  <div class="modal-content" style="max-width: 360px;">
-    <h3 id="dayLogTitle" style="margin:0; font-size:1.05rem; color:var(--accent-blue);">Logs</h3>
-    <div id="dayLogList" style="margin-top:8px;"></div>
-    <div class="modal-btns" style="margin-top:10px;">
-      <button class="btn btn-sub" onclick="closeDayLogModal()">Close</button>
-    </div>
-  </div>
-</div>
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
 
-<script>
-  let workouts = JSON.parse(localStorage.getItem('my_workouts_v5')) || [];
-  let historyLogs = JSON.parse(localStorage.getItem('my_workout_history_v5')) || {};
-  let customTitle = localStorage.getItem('my_app_title_v5') || 'My Routines';
-  
-  let currentWorkoutId = null;
-  let editingWorkoutId = null; 
-  let currentType = 'single';
-  let selectedDateKey = null;
+      const name = document.getElementById('exercise-name').value;
+      const targetSets = parseInt(document.getElementById('target-sets').value);
+      const targetReps = document.getElementById('target-reps').value;
+      const mode = document.getElementById('routine-type').value;
 
-  // Clock variables (Timer & Stopwatch)
-  let activeClockMode = 'timer'; // 'timer' or 'stopwatch'
-  let clockInterval = null;
-  let clockRunning = false;
-  let timerRemainingSeconds = 0;
-  let stopwatchSeconds = 0;
+      currentMode = mode;
+      modeBadge.textContent = mode;
 
-  // Calendar state
-  let calDate = new Date();
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      if (mode === "Circuit") {
+        circuitHeader.style.display = 'flex';
+      } else {
+        circuitHeader.style.display = 'none';
+      }
 
-  function initTitle() {
-    document.getElementById('appTitle').innerText = customTitle;
-  }
-
-  function editAppTitle() {
-    const newTitle = prompt('Enter new main title:', customTitle);
-    if (newTitle !== null && newTitle.trim() !== '') {
-      customTitle = newTitle.trim();
-      localStorage.setItem('my_app_title_v5', customTitle);
-      document.getElementById('appTitle').innerText = customTitle;
-    }
-  }
-
-  function saveData() {
-    localStorage.setItem('my_workouts_v5', JSON.stringify(workouts));
-    localStorage.setItem('my_workout_history_v5', JSON.stringify(historyLogs));
-  }
-
-  function getTodayKey() {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const date = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${date}`;
-  }
-
-  /* --- Web Audio Beep Sound --- */
-  function playBeepSound() {
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const playSingleBeep = (time, duration) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, time); // 880Hz (A5)
-        gain.gain.setValueAtTime(0.3, time);
-        gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(time);
-        osc.stop(time + duration);
+      const exercise = {
+        id: Date.now(),
+        name,
+        targetSets,
+        targetReps,
+        sets: Array.from({ length: targetSets }, () => ({ completed: false }))
       };
-      
-      const now = audioCtx.currentTime;
-      playSingleBeep(now, 0.15);
-      playSingleBeep(now + 0.2, 0.15);
-      playSingleBeep(now + 0.4, 0.35);
-    } catch(e) {
-      console.log('Audio error:', e);
+
+      exercises.push(exercise);
+      form.reset();
+      document.getElementById('target-sets').value = 3;
+      render();
+    });
+
+    function toggleSet(exerciseId, setIndex) {
+      const exercise = exercises.find(ex => ex.id === exerciseId);
+      if (exercise) {
+        exercise.sets[setIndex].completed = !exercise.sets[setIndex].completed;
+        render();
+      }
     }
-  }
 
-  /* --- Timer & Stopwatch Logic --- */
-  function switchTimerMode(mode) {
-    resetClock();
-    activeClockMode = mode;
-    
-    document.getElementById('tabTimerMode').className = mode === 'timer' ? 'timer-tab-btn active' : 'timer-tab-btn';
-    document.getElementById('tabStopwatchMode').className = mode === 'stopwatch' ? 'timer-tab-btn active' : 'timer-tab-btn';
-
-    if (mode === 'timer') {
-      document.getElementById('timerModeArea').style.display = 'flex';
-      document.getElementById('stopwatchModeArea').style.display = 'none';
-      document.getElementById('timerInputControls').style.display = 'flex';
-      document.getElementById('timerDisplay').style.display = 'none';
-    } else {
-      document.getElementById('timerModeArea').style.display = 'none';
-      document.getElementById('stopwatchModeArea').style.display = 'block';
+    function removeExercise(exerciseId) {
+      const index = exercises.findIndex(ex => ex.id === exerciseId);
+      if (index !== -1) {
+        exercises.splice(index, 1);
+        render();
+      }
     }
-  }
 
-  function toggleClock() {
-    const btn = document.getElementById('clockStartBtn');
-    
-    if (clockRunning) {
-      clearInterval(clockInterval);
-      clockRunning = false;
-      btn.innerText = '▶ Start';
-    } else {
-      if (activeClockMode === 'timer') {
-        if (timerRemainingSeconds <= 0) {
-          const m = parseInt(document.getElementById('timerMin').value) || 0;
-          const s = parseInt(document.getElementById('timerSec').value) || 0;
-          timerRemainingSeconds = (m * 60) + s;
-        }
-        
-        if (timerRemainingSeconds <= 0) {
-          alert('Please set time greater than 0.');
-          return;
-        }
-
-        document.getElementById('timerInputControls').style.display = 'none';
-        document.getElementById('timerDisplay').style.display = 'block';
-        updateTimerDisplay();
-
-        clockRunning = true;
-        btn.innerText = '❚❚ Pause';
-        
-        clockInterval = setInterval(() => {
-          timerRemainingSeconds--;
-          updateTimerDisplay();
-
-          if (timerRemainingSeconds <= 0) {
-            clearInterval(clockInterval);
-            clockRunning = false;
-            btn.innerText = '▶ Start';
-            playBeepSound();
-            alert('⏰ Time is up!');
-            resetClock();
+    nextRoundBtn.addEventListener('click', () => {
+      completedCircuitRounds++;
+      exercises.forEach(ex => {
+        ex.sets.forEach((set, idx) => {
+          if (idx < completedCircuitRounds && idx < ex.sets.length) {
+            set.completed = true;
           }
-        }, 1000);
-
-      } else {
-        // Stopwatch Mode
-        clockRunning = true;
-        btn.innerText = '❚❚ Pause';
-        clockInterval = setInterval(() => {
-          stopwatchSeconds++;
-          updateStopwatchDisplay();
-        }, 1000);
-      }
-    }
-  }
-
-  function resetClock() {
-    clearInterval(clockInterval);
-    clockRunning = false;
-    document.getElementById('clockStartBtn').innerText = '▶ Start';
-
-    if (activeClockMode === 'timer') {
-      timerRemainingSeconds = 0;
-      document.getElementById('timerInputControls').style.display = 'flex';
-      document.getElementById('timerDisplay').style.display = 'none';
-    } else {
-      stopwatchSeconds = 0;
-      updateStopwatchDisplay();
-    }
-  }
-
-  function updateTimerDisplay() {
-    const mins = Math.floor(timerRemainingSeconds / 60).toString().padStart(2, '0');
-    const secs = (timerRemainingSeconds % 60).toString().padStart(2, '0');
-    document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
-  }
-
-  function updateStopwatchDisplay() {
-    const mins = Math.floor(stopwatchSeconds / 60).toString().padStart(2, '0');
-    const secs = (stopwatchSeconds % 60).toString().padStart(2, '0');
-    document.getElementById('stopwatchDisplay').innerText = `${mins}:${secs}`;
-  }
-
-  function toggleOverloadSettings() {
-    const mode = document.getElementById('progressionMode').value;
-    document.getElementById('customOverloadBox').style.display = (mode === 'custom') ? 'flex' : 'none';
-  }
-
-  /* --- Target Calculations --- */
-  function calculateTargets(w) {
-    if (w.mode === 'pyramid') {
-      return getCustomPyramidTargets(w.items, w.day);
-    } else if (w.mode === 'custom' && w.overloadConfig) {
-      const cfg = w.overloadConfig;
-      let multiplier = 0;
-      
-      if (cfg.freq === 'day') {
-        multiplier = w.day - 1;
-      } else if (cfg.freq === 'week') {
-        multiplier = Math.floor((w.day - 1) / 7);
-      } else if (cfg.freq === 'month') {
-        multiplier = Math.floor((w.day - 1) / 30);
-      }
-
-      const totalIncrease = multiplier * cfg.amount;
-
-      if (cfg.target === 'all') {
-        const targets = w.items.map(item => item.target + totalIncrease);
-        return { isRest: false, targets: targets };
-      } else {
-        let targets = w.items.map(item => item.target);
-        const setLen = w.items.length;
-        for (let i = 0; i < totalIncrease; i++) {
-          const idx = setLen - 1 - (i % setLen);
-          targets[idx] += 1;
-        }
-        return { isRest: false, targets: targets };
-      }
-    } else {
-      return { isRest: false, targets: w.items.map(i => i.target) };
-    }
-  }
-
-  function getCustomPyramidTargets(items, day) {
-    const totalSets = items.length;
-    const cycleLength = totalSets + 1;
-    const currentCycle = Math.floor((day - 1) / cycleLength);
-    const dayInCycle = ((day - 1) % cycleLength) + 1;
-
-    if (dayInCycle === cycleLength) {
-      return { isRest: true, targets: [] };
-    }
-
-    let targets = items.map((item) => item.target + currentCycle);
-
-    if (dayInCycle > 1) {
-      const incrementIndex = totalSets - (dayInCycle - 1);
-      if (incrementIndex >= 0 && incrementIndex < totalSets) {
-        targets[incrementIndex] += 1;
-      }
-    }
-
-    return { isRest: false, targets: targets };
-  }
-
-  /* --- UI & List Rendering --- */
-  function renderList() {
-    const listEl = document.getElementById('workoutList');
-    if (workouts.length === 0) {
-      listEl.innerHTML = '<p style="text-align:center; color: var(--text-sub); margin-top: 40px;">Tap the + button to<br>add your first workout routine!</p>';
-      return;
-    }
-    listEl.innerHTML = workouts.map(w => {
-      const typeLabel = w.type === 'multi' ? 'Circuit' : 'Single Exercise';
-      const countLabel = w.type === 'multi' ? `${w.items.length} Exercises` : `${w.items.length} Sets`;
-      
-      let modeText = 'Fixed';
-      if (w.mode === 'pyramid') modeText = 'Rev Pyramid';
-      else if (w.mode === 'custom') modeText = 'Custom Overload';
-      
-      let statusText = `Day ${w.day}`;
-      if (w.mode === 'pyramid') {
-        const pData = getCustomPyramidTargets(w.items, w.day);
-        if (pData.isRest) statusText = `Day ${w.day} (Rest 🛌)`;
-      }
-
-      return `
-        <div class="workout-item" onclick="openDetail('${w.id}')">
-          <div>
-            <div class="workout-title">${w.name}</div>
-            <div class="workout-info">[${typeLabel}] ${statusText} · ${countLabel} · ${modeText}</div>
-          </div>
-          <div style="color: var(--accent-blue); font-size: 1.1rem;">➔</div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  /* --- Calendar Modal & Log Deletion --- */
-  function openCalendarModal() {
-    calDate = new Date();
-    document.getElementById('calendarModal').style.display = 'flex';
-    renderCalendar();
-  }
-
-  function closeCalendarModal() {
-    document.getElementById('calendarModal').style.display = 'none';
-  }
-
-  function changeMonth(delta) {
-    calDate.setMonth(calDate.getMonth() + delta);
-    renderCalendar();
-  }
-
-  function renderCalendar() {
-    const year = calDate.getFullYear();
-    const month = calDate.getMonth();
-    
-    document.getElementById('calMonthTitle').innerText = `${monthNames[month]} ${year}`;
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const lastDate = new Date(year, month + 1, 0).getDate();
-
-    const todayStr = getTodayKey();
-    const container = document.getElementById('calendarDays');
-    container.innerHTML = '';
-
-    for (let i = 0; i < firstDay; i++) {
-      container.innerHTML += `<div class="cal-cell" style="background:transparent; cursor:default;"></div>`;
-    }
-
-    for (let day = 1; day <= lastDate; day++) {
-      const mStr = String(month + 1).padStart(2, '0');
-      const dStr = String(day).padStart(2, '0');
-      const dateKey = `${year}-${mStr}-${dStr}`;
-      
-      const isToday = dateKey === todayStr ? 'today' : '';
-      const logs = historyLogs[dateKey] || [];
-
-      let tagsHtml = logs.map(name => `<div class="workout-tag" title="${name}">✓ ${name}</div>`).join('');
-
-      container.innerHTML += `
-        <div class="cal-cell ${isToday}" onclick="openDayLogModal('${dateKey}')">
-          <span class="date-num">${day}</span>
-          ${tagsHtml}
-        </div>
-      `;
-    }
-  }
-
-  function openDayLogModal(dateKey) {
-    selectedDateKey = dateKey;
-    document.getElementById('dayLogTitle').innerText = `${dateKey} Completed Workouts`;
-    renderDayLogs();
-    document.getElementById('dayLogModal').style.display = 'flex';
-  }
-
-  function closeDayLogModal() {
-    document.getElementById('dayLogModal').style.display = 'none';
-  }
-
-  function renderDayLogs() {
-    const listContainer = document.getElementById('dayLogList');
-    const logs = historyLogs[selectedDateKey] || [];
-
-    if (logs.length === 0) {
-      listContainer.innerHTML = '<p style="text-align:center; color:var(--text-sub); font-size:0.85rem; padding:10px 0;">No completed workouts on this date.</p>';
-      return;
-    }
-
-    listContainer.innerHTML = logs.map((workoutName, index) => `
-      <div class="log-item">
-        <span>⚡ ${workoutName}</span>
-        <button class="btn-del-row" style="height:26px; width:26px; font-size:0.75rem;" onclick="deleteDayLog(${index})">✕</button>
-      </div>
-    `).join('');
-  }
-
-  function deleteDayLog(index) {
-    if (confirm("Delete this workout record from calendar?")) {
-      historyLogs[selectedDateKey].splice(index, 1);
-      if (historyLogs[selectedDateKey].length === 0) {
-        delete historyLogs[selectedDateKey];
-      }
-      saveData();
-      renderDayLogs();
-      renderCalendar();
-    }
-  }
-
-  /* --- Routine Creation & Editing --- */
-  function openAddModal() {
-    editingWorkoutId = null;
-    document.getElementById('modalHeaderTitle').innerText = 'Create New Routine';
-    document.getElementById('saveModalBtn').innerText = 'Create';
-    document.getElementById('addModal').style.display = 'flex';
-    document.getElementById('inputName').value = '';
-    document.getElementById('progressionMode').value = 'none';
-    toggleOverloadSettings();
-    switchType('single');
-  }
-
-  function openEditModal() {
-    const w = workouts.find(item => item.id === currentWorkoutId);
-    if (!w) return;
-
-    editingWorkoutId = w.id;
-    document.getElementById('modalHeaderTitle').innerText = 'Edit Routine';
-    document.getElementById('saveModalBtn').innerText = 'Save Changes';
-    document.getElementById('addModal').style.display = 'flex';
-
-    document.getElementById('inputName').value = w.name;
-    document.getElementById('progressionMode').value = w.mode || 'none';
-    
-    if (w.mode === 'custom' && w.overloadConfig) {
-      document.getElementById('overloadFreq').value = w.overloadConfig.freq;
-      document.getElementById('overloadAmount').value = w.overloadConfig.amount;
-      document.getElementById('overloadTarget').value = w.overloadConfig.target;
-    }
-    toggleOverloadSettings();
-
-    switchType(w.type);
-
-    if (w.type === 'single') {
-      document.getElementById('inputSetCount').value = w.items.length;
-      renderSingleInputs();
-      w.items.forEach((item, i) => {
-        const valInput = document.getElementById(`singleSetInput_${i}`);
-        const unitSelect = document.querySelectorAll('.single-unit')[i];
-        if (valInput) valInput.value = item.target;
-        if (unitSelect) unitSelect.value = item.unit;
-      });
-    } else {
-      const container = document.getElementById('multiInputsList');
-      container.innerHTML = '';
-      w.items.forEach(item => {
-        addMultiInputRow(item.label, item.target, item.unit);
-      });
-    }
-    updateModalTotal();
-  }
-
-  function closeAddModal() {
-    document.getElementById('addModal').style.display = 'none';
-  }
-
-  function switchType(type) {
-    currentType = type;
-    document.getElementById('tabSingle').className = type === 'single' ? 'active' : '';
-    document.getElementById('tabMulti').className = type === 'multi' ? 'active' : '';
-    document.getElementById('singleSection').style.display = type === 'single' ? 'block' : 'none';
-    document.getElementById('multiSection').style.display = type === 'multi' ? 'block' : 'none';
-
-    if (type === 'single' && !editingWorkoutId) renderSingleInputs();
-    else if (type === 'multi' && !editingWorkoutId) renderMultiInputs();
-    updateModalTotal();
-  }
-
-  function renderSingleInputs() {
-    const count = parseInt(document.getElementById('inputSetCount').value) || 5;
-    const container = document.getElementById('singleInputsList');
-    container.innerHTML = '';
-    
-    let baseVal = 5;
-    for (let i = 0; i < count; i++) {
-      const val = Math.max(1, baseVal - i);
-      container.innerHTML += `
-        <div class="item-row">
-          <span style="font-size:0.8rem; color:var(--text-sub); width:48px;">Set ${i+1}</span>
-          <input type="number" class="single-val" id="singleSetInput_${i}" value="${val}" min="1" oninput="${i === 0 ? 'autoCascadeSetValues(this.value);' : ''} updateModalTotal();">
-          <select class="single-unit" onchange="updateModalTotal()">
-            <option value="reps">reps</option>
-            <option value="min">min</option>
-            <option value="sec">sec</option>
-          </select>
-        </div>
-      `;
-    }
-    updateModalTotal();
-  }
-
-  function autoCascadeSetValues(valStr) {
-    const startVal = parseInt(valStr);
-    if (isNaN(startVal)) return;
-
-    const count = parseInt(document.getElementById('inputSetCount').value) || 5;
-    for (let i = 1; i < count; i++) {
-      const inputEl = document.getElementById(`singleSetInput_${i}`);
-      if (inputEl) {
-        inputEl.value = Math.max(1, startVal - i);
-      }
-    }
-    updateModalTotal();
-  }
-
-  function renderMultiInputs() {
-    const container = document.getElementById('multiInputsList');
-    container.innerHTML = '';
-    const defaultEx = ['Push-ups', 'Squats', 'Plank', 'Burpees'];
-    const defaultVals = [15, 20, 1, 10];
-    const defaultUnits = ['reps', 'reps', 'min', 'reps'];
-
-    for (let i = 0; i < 4; i++) {
-      addMultiInputRow(defaultEx[i], defaultVals[i], defaultUnits[i]);
-    }
-    updateModalTotal();
-  }
-
-  function addMultiInputRow(name = '', val = 10, unit = 'reps') {
-    const container = document.getElementById('multiInputsList');
-    const div = document.createElement('div');
-    div.className = 'item-row';
-    div.innerHTML = `
-      <input type="text" class="multi-name" placeholder="Exercise Name" value="${name}">
-      <input type="number" class="multi-val" value="${val}" min="1" oninput="updateModalTotal()">
-      <select class="multi-unit" onchange="updateModalTotal()">
-        <option value="reps" ${unit==='reps'?'selected':''}>reps</option>
-        <option value="min" ${unit==='min'?'selected':''}>min</option>
-        <option value="sec" ${unit==='sec'?'selected':''}>sec</option>
-      </select>
-      <button type="button" class="btn-del-row" onclick="removeMultiInputRow(this)">✕</button>
-    `;
-    container.appendChild(div);
-    updateModalTotal();
-  }
-
-  function removeMultiInputRow(btn) {
-    btn.parentElement.remove();
-    updateModalTotal();
-  }
-
-  function updateModalTotal() {
-    const summaryEl = document.getElementById('modalTotalSummary');
-    let totals = {};
-
-    if (currentType === 'single') {
-      const vals = document.querySelectorAll('.single-val');
-      const units = document.querySelectorAll('.single-unit');
-      vals.forEach((v, i) => {
-        const val = parseInt(v.value) || 0;
-        const unit = units[i] ? units[i].value : 'reps';
-        totals[unit] = (totals[unit] || 0) + val;
-      });
-    } else {
-      const vals = document.querySelectorAll('.multi-val');
-      const units = document.querySelectorAll('.multi-unit');
-      vals.forEach((v, i) => {
-        const val = parseInt(v.value) || 0;
-        const unit = units[i] ? units[i].value : 'reps';
-        totals[unit] = (totals[unit] || 0) + val;
-      });
-    }
-
-    let textArr = [];
-    for (let unit in totals) {
-      textArr.push(`${totals[unit]} ${unit}`);
-    }
-    summaryEl.innerText = `Total Goal (Day 1): ` + (textArr.length > 0 ? textArr.join(' + ') : '0');
-  }
-
-  function saveWorkout() {
-    const name = document.getElementById('inputName').value.trim();
-    const mode = document.getElementById('progressionMode').value;
-    if (!name) { alert('Please enter a routine or exercise name!'); return; }
-
-    let items = [];
-    if (currentType === 'single') {
-      const vals = document.querySelectorAll('.single-val');
-      const units = document.querySelectorAll('.single-unit');
-      vals.forEach((v, i) => {
-        items.push({
-          label: `Set ${i + 1}`,
-          target: parseInt(v.value) || 1,
-          unit: units[i].value
         });
       });
-    } else {
-      const names = document.querySelectorAll('.multi-name');
-      const vals = document.querySelectorAll('.multi-val');
-      const units = document.querySelectorAll('.multi-unit');
-      names.forEach((n, i) => {
-        if (n.value.trim() !== '') {
-          items.push({
-            label: n.value.trim(),
-            target: parseInt(vals[i].value) || 1,
-            unit: units[i].value
-          });
-        }
-      });
-      if (items.length === 0) { alert('Please add at least one exercise.'); return; }
-    }
+      circuitStatus.textContent = `Completed Rounds: ${completedCircuitRounds}`;
+      render();
+    });
 
-    const overloadConfig = {
-      freq: document.getElementById('overloadFreq').value,
-      amount: parseInt(document.getElementById('overloadAmount').value) || 1,
-      target: document.getElementById('overloadTarget').value
-    };
-
-    if (editingWorkoutId) {
-      const w = workouts.find(item => item.id === editingWorkoutId);
-      if (w) {
-        w.name = name;
-        w.type = currentType;
-        w.mode = mode;
-        w.overloadConfig = overloadConfig;
-        w.items = items;
-        w.completed = new Array(items.length).fill(false);
+    function render() {
+      if (exercises.length === 0) {
+        exerciseList.innerHTML = '<div class="empty-state">No exercises added yet. Add one above!</div>';
+        return;
       }
-    } else {
-      const newWorkout = {
-        id: Date.now().toString(),
-        name: name,
-        type: currentType,
-        mode: mode,
-        overloadConfig: overloadConfig,
-        day: 1,
-        items: items,
-        completed: new Array(items.length).fill(false)
-      };
-      workouts.push(newWorkout);
-    }
 
-    saveData();
-    closeAddModal();
-    if (editingWorkoutId) {
-      renderDetail();
-    }
-    renderList();
-  }
+      exerciseList.innerHTML = '';
 
-  /* --- Routine Detail View & Execution --- */
-  function openDetail(id) {
-    currentWorkoutId = id;
-    document.getElementById('viewList').style.display = 'none';
-    document.getElementById('viewDetail').style.display = 'block';
-    resetClock();
-    renderDetail();
-  }
+      exercises.forEach(ex => {
+        const completedCount = ex.sets.filter(s => s.completed).length;
+        const item = document.createElement('div');
+        item.className = 'exercise-item';
 
-  function showList() {
-    document.getElementById('viewList').style.display = 'block';
-    document.getElementById('viewDetail').style.display = 'none';
-    resetClock();
-    renderList();
-  }
+        let setsHTML = '';
+        ex.sets.forEach((set, idx) => {
+          setsHTML += `
+            <div class="set-row ${set.completed ? 'completed' : ''}">
+              <span class="set-number">Set ${idx + 1}</span>
+              <span class="set-info">${ex.targetReps}</span>
+              <label class="checkbox-container">
+                <input type="checkbox" ${set.completed ? 'checked' : ''} onchange="toggleSet(${ex.id}, ${idx})" />
+              </label>
+            </div>
+          `;
+        });
 
-  function renderDetail() {
-    const w = workouts.find(item => item.id === currentWorkoutId);
-    if (!w) return;
-
-    document.getElementById('detailTitle').innerText = w.name;
-    const card = document.getElementById('detailCard');
-
-    let modeLabel = 'Fixed';
-    if (w.mode === 'pyramid') modeLabel = 'Rev Pyramid';
-    else if (w.mode === 'custom') modeLabel = 'Custom Overload';
-
-    const calcData = calculateTargets(w);
-
-    if (calcData.isRest) {
-      card.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <span class="day-badge" style="background:#f59e0b;">Day ${w.day}</span>
-            <span class="mode-badge">${modeLabel}</span>
+        item.innerHTML = `
+          <div class="exercise-title">
+            <span>${ex.name} (${completedCount}/${ex.targetSets} Sets Done)</span>
+            <button class="btn-danger" onclick="removeExercise(${ex.id})">Delete</button>
           </div>
-        </div>
-        <div style="text-align:center; padding: 30px 10px;">
-          <div style="font-size: 3rem; margin-bottom:10px;">🛌</div>
-          <h2 style="margin:0; font-size:1.2rem;">Rest Day!</h2>
-          <p style="color:var(--text-sub); font-size:0.85rem; margin-top:6px;">Take a well-deserved break today.<br>Your muscles grow during rest!</p>
-        </div>
-        <button class="btn" style="background:#f59e0b;" onclick="completeDay()">Complete Rest Day</button>
-      `;
-      return;
+          <div class="sets-container">
+            ${setsHTML}
+          </div>
+        `;
+
+        exerciseList.appendChild(item);
+      });
     }
-
-    let currentTotals = {};
-    let setListHtml = w.items.map((item, idx) => {
-      const currentVal = calcData.targets[idx];
-      currentTotals[item.unit] = (currentTotals[item.unit] || 0) + currentVal;
-
-      return `
-        <div class="set-item ${w.completed[idx] ? 'done' : ''}" onclick="toggleCheck(${idx})">
-          <span><strong>${item.label}</strong> : <span class="set-reps">${currentVal} ${item.unit}</span></span>
-          <div class="checkbox"></div>
-        </div>
-      `;
-    }).join('');
-
-    let totalTextArr = [];
-    for (let u in currentTotals) {
-      totalTextArr.push(`${currentTotals[u]} ${u}`);
-    }
-
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <span class="day-badge">Day ${w.day}</span>
-          <span class="mode-badge">${modeLabel}</span>
-        </div>
-        <span style="font-size:0.8rem; color:var(--text-sub);">${w.type === 'multi' ? 'Circuit' : 'Single Exercise'}</span>
-      </div>
-      <div class="total-badge">⚡ Total Goal: ${totalTextArr.join(' + ')}</div>
-      <div class="set-list">${setListHtml}</div>
-      <button class="btn" onclick="completeDay()">Complete Workout!</button>
-    `;
-  }
-
-  function toggleCheck(index) {
-    const w = workouts.find(item => item.id === currentWorkoutId);
-    if (!w.completed) w.completed = new Array(w.items.length).fill(false);
-    w.completed[index] = !w.completed[index];
-    saveData();
-    renderDetail();
-  }
-
-  function completeDay() {
-    const w = workouts.find(item => item.id === currentWorkoutId);
-    
-    const todayKey = getTodayKey();
-    if (!historyLogs[todayKey]) historyLogs[todayKey] = [];
-    if (!historyLogs[todayKey].includes(w.name)) {
-      historyLogs[todayKey].push(w.name);
-    }
-
-    w.day++;
-    w.completed = new Array(w.items.length).fill(false);
-    saveData();
-    alert(`🎉 '${w.name}' Day ${w.day - 1} completed! Logged in calendar.`);
-    renderDetail();
-  }
-
-  function prevDay() {
-    const w = workouts.find(item => item.id === currentWorkoutId);
-    if (w.day > 1) {
-      w.day--;
-      w.completed = new Array(w.items.length).fill(false);
-      saveData();
-      renderDetail();
-    }
-  }
-
-  function deleteWorkout() {
-    if (confirm("Are you sure you want to delete this routine?")) {
-      workouts = workouts.filter(item => item.id !== currentWorkoutId);
-      saveData();
-      showList();
-    }
-  }
-
-  initTitle();
-  renderList();
-</script>
+  </script>
 </body>
 </html>
